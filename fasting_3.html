@@ -50,6 +50,8 @@
   .sub{font-size:12.5px;color:var(--dim);margin-top:7px;font-weight:600;}
   .sub b{color:var(--txt);font-weight:700;}
   .pctpill{margin-top:9px;font-size:11px;font-weight:800;letter-spacing:.10em;color:var(--dim2);}
+  .pctpill.tapp{color:var(--fast);border-bottom:1px dashed rgba(129,140,248,.5);padding-bottom:2px;cursor:pointer;}
+  body.eating .pctpill.tapp{color:var(--eat);border-bottom-color:rgba(251,191,36,.5);}
 
   .cta{width:100%;margin:16px 0 6px;padding:17px;border:none;border-radius:19px;font-size:16.5px;font-weight:800;
     letter-spacing:.01em;cursor:pointer;color:#0A0C14;transition:transform .12s,filter .15s;
@@ -58,6 +60,23 @@
   .cta.warm{background:linear-gradient(160deg,var(--eat),var(--eat2));box-shadow:0 10px 28px -12px rgba(245,158,11,.9);}
   .cta.ghost{background:none;border:1px solid var(--line);color:var(--dim);box-shadow:none;font-weight:700;font-size:14px;padding:13px;margin-top:0;}
   .cta.ghost:active{color:var(--txt);}
+  .cta.ghost.armed{border-color:#4A2228;color:#F8A0A0;background:#241417;}
+  .ctarow{display:flex;gap:9px;margin-top:9px;}
+  .ctarow .cta{margin:0;flex:1;}
+
+  /* time editor */
+  .chips{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0 4px;}
+  .chip{padding:12px 4px;border-radius:13px;border:1px solid var(--line);background:#14181F;color:#C3CBFF;
+    font-size:13.5px;font-weight:800;cursor:pointer;text-align:center;}
+  .chip:active{background:#1E2445;}
+  .tinput{width:100%;background:#14181F;border:1px solid var(--line);border-radius:14px;padding:15px;color:var(--txt);
+    font-size:17px;font-weight:700;-webkit-appearance:none;font-family:inherit;}
+  .tinput:focus{outline:none;border-color:#454E90;}
+  .tprev{font-size:13px;color:var(--dim);margin-top:12px;line-height:1.5;min-height:20px;}
+  .tprev b{color:var(--txt);}
+  .tsave{width:100%;margin-top:14px;padding:16px;border:none;border-radius:16px;font-size:16px;font-weight:800;
+    color:#0A0C14;background:linear-gradient(160deg,var(--fast),var(--fast2));cursor:pointer;}
+  .tsave:active{transform:scale(.98);}
 
   h2.sec{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim2);margin:24px 0 10px 4px;font-weight:800;}
 
@@ -218,7 +237,10 @@
   </div>
 
   <button class="cta" id="cta">Start fast</button>
-  <button class="cta ghost" id="cta2" hidden>Skip to fasting</button>
+  <div class="ctarow">
+    <button class="cta ghost" id="btnEdit">Edit start time</button>
+    <button class="cta ghost" id="btnCancel" hidden>Cancel fast</button>
+  </div>
 
   <div class="strip">
     <div class="stat hot"><b id="stStreak">0</b><span>Day streak</span></div>
@@ -299,6 +321,30 @@
   </div>
   <button class="danger" id="btnWipe">Erase all data</button>
   <div class="hint">Everything is stored only on this device. Nothing is sent anywhere.</div>
+</div>
+
+<!-- TIME EDITOR -->
+<div class="sheet" id="shTime">
+  <div class="grab"></div>
+  <div class="sh-head"><h3 id="tTitle">Start time</h3>
+    <button class="icon-btn" data-close><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <input class="tinput" id="tInput" type="datetime-local">
+  <div class="chips">
+    <button class="chip" data-nudge="-60">−1h</button>
+    <button class="chip" data-nudge="-30">−30m</button>
+    <button class="chip" data-nudge="-15">−15m</button>
+    <button class="chip" data-nudge="15">+15m</button>
+  </div>
+  <div class="chips">
+    <button class="chip" data-nudge="30">+30m</button>
+    <button class="chip" data-nudge="60">+1h</button>
+    <button class="chip" data-set="now">Now</button>
+    <button class="chip" data-set="last20">8pm</button>
+  </div>
+  <div class="tprev" id="tPrev"></div>
+  <button class="tsave" id="tSave">Save</button>
+  <div class="hint">You can set a time up to 3 days back — handy when you forget to hit start until the morning.</div>
 </div>
 
 <!-- WEIGHT -->
@@ -469,9 +515,9 @@
           ? "Target " + hrsTxt(a.hours) + " · <b>" + hm(left) + "</b> to go"
           : "Target reached at <b>" + clockOf(a.start + a.hours*HOUR) + "</b>";
         $("pctLbl").textContent = "STARTED " + clockOf(a.start).toUpperCase();
+        $("pctLbl").className = "pctpill tapp";
         $("cta").textContent = "End fast";
         $("cta").className = "cta warm";
-        $("cta2").hidden = true;
         if(left <= 0 && !reached){ reached = true; chime(); confetti(); }
         if(left > 0) reached = false;
       } else {
@@ -483,9 +529,9 @@
           ? "<b>" + hm(leftE) + "</b> left of " + hrsTxt(a.hours)
           : "Window closed — time to fast";
         $("pctLbl").textContent = "OPENED " + clockOf(a.start).toUpperCase();
+        $("pctLbl").className = "pctpill tapp";
         $("cta").textContent = "Start fast";
         $("cta").className = "cta";
-        $("cta2").hidden = true;
       }
     } else {
       document.body.classList.remove("eating");
@@ -494,10 +540,11 @@
       $("clock").textContent = db.s.fast + ":" + (24-db.s.fast);
       $("subLbl").textContent = "Ready when you are";
       $("pctLbl").textContent = "";
+      $("pctLbl").className = "pctpill";
       $("cta").textContent = "Start " + db.s.fast + "h fast";
       $("cta").className = "cta";
-      $("cta2").hidden = true;
     }
+    renderButtons(a);
     $("bar").setAttribute("stroke-dashoffset", (CIRC*(1-pct)).toFixed(2));
 
     var s = stats();
@@ -509,6 +556,133 @@
     renderDrinks();
     renderWeight();
   }
+
+  var armed = false, armTimer = null;
+  function disarm(){
+    armed = false;
+    if(armTimer){ clearTimeout(armTimer); armTimer = null; }
+    renderButtons(db.active);
+  }
+  function renderButtons(a){
+    var e = $("btnEdit"), c = $("btnCancel");
+    if(!a){
+      e.hidden = false; e.textContent = "Start at an earlier time";
+      c.hidden = true; armed = false;
+      return;
+    }
+    e.hidden = false;
+    e.textContent = a.mode === "fast" ? "Edit start time" : "Edit window start";
+    c.hidden = false;
+    if(armed){
+      c.className = "cta ghost armed";
+      c.textContent = "Tap again to confirm";
+    } else {
+      c.className = "cta ghost";
+      c.textContent = a.mode === "fast" ? "Cancel fast" : "End window";
+    }
+  }
+
+  /* ---------- time editor ---------- */
+  var editMode = null;
+  function toInput(ts){
+    var d = new Date(ts), p = function(n){ return String(n).padStart(2,"0"); };
+    return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+"T"+p(d.getHours())+":"+p(d.getMinutes());
+  }
+  function fromInput(v){
+    var m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(String(v||""));
+    if(!m) return NaN;
+    return new Date(+m[1], +m[2]-1, +m[3], +m[4], +m[5], 0, 0).getTime();
+  }
+  function clampTs(ts){
+    var now = Date.now();
+    if(!isFinite(ts)) return now;
+    if(ts > now) return now;
+    if(now - ts > 72*HOUR) return now - 72*HOUR;
+    return ts;
+  }
+  function openTime(mode){
+    editMode = mode;
+    var a = db.active;
+    var seed = (mode === "newFast" || !a) ? Date.now() : a.start;
+    $("tTitle").textContent = mode === "newFast" ? "Fast started at"
+      : (a && a.mode === "fast" ? "Fast started at" : "Eating window started at");
+    $("tInput").value = toInput(seed);
+    timePreview();
+    openSheet($("shTime"));
+  }
+  function timePreview(){
+    var ts = fromInput($("tInput").value), now = Date.now();
+    if(!isFinite(ts)){ $("tPrev").textContent = "Pick a date and time."; return; }
+    if(ts > now){ $("tPrev").innerHTML = "That's in the future — it'll be pulled back to <b>now</b>."; return; }
+    if(now - ts > 72*HOUR){ $("tPrev").innerHTML = "More than 3 days ago — it'll be capped at <b>3 days</b>."; return; }
+    var ago = (now - ts)/HOUR;
+    var isFastMode = editMode === "newFast" || (db.active && db.active.mode === "fast");
+    var hrs = isFastMode ? db.s.fast : Math.max(1, 24 - db.s.fast);
+    var endTs = ts + hrs*HOUR;
+    var word = isFastMode ? "fasting" : "into the window";
+    $("tPrev").innerHTML = "That's <b>" + hrsTxt(ago) + "</b> " + word + " already · "
+      + (endTs > now ? "target at <b>" + clockOf(endTs) + "</b>" : "target passed at <b>" + clockOf(endTs) + "</b>");
+  }
+  $("tInput").addEventListener("input", timePreview);
+  $("tInput").addEventListener("change", timePreview);
+  document.querySelectorAll("[data-nudge]").forEach(function(b){
+    b.addEventListener("click", function(){
+      var ts = fromInput($("tInput").value);
+      if(!isFinite(ts)) ts = Date.now();
+      $("tInput").value = toInput(ts + parseInt(b.getAttribute("data-nudge"),10)*60000);
+      timePreview();
+    });
+  });
+  document.querySelectorAll("[data-set]").forEach(function(b){
+    b.addEventListener("click", function(){
+      var w = b.getAttribute("data-set");
+      if(w === "now"){ $("tInput").value = toInput(Date.now()); }
+      else {
+        var d = new Date(); d.setHours(20,0,0,0);
+        if(d.getTime() > Date.now()) d.setDate(d.getDate()-1);
+        $("tInput").value = toInput(d.getTime());
+      }
+      timePreview();
+    });
+  });
+  $("tSave").addEventListener("click", function(){
+    var ts = clampTs(fromInput($("tInput").value));
+    if(editMode === "newFast" || !db.active){
+      db.active = { mode:"fast", start:ts, hours: db.s.fast };
+    } else if(db.active.mode === "fast"){
+      db.active.start = ts;
+    } else {
+      var old = db.active.start;
+      db.active.start = ts;
+      var lf = db.fasts[db.fasts.length-1];
+      if(lf && Math.abs(lf.end - old) < 60000){
+        lf.end = ts;
+        lf.actual = Math.max(0, (ts - lf.start)/HOUR);
+      }
+    }
+    reached = db.active.mode === "fast" && (Date.now() - db.active.start) >= db.active.hours*HOUR;
+    save(); render(); closeSheets(); tick();
+  });
+  $("btnEdit").addEventListener("click", function(){
+    disarm();
+    openTime(db.active ? "edit" : "newFast");
+  });
+  $("pctLbl").addEventListener("click", function(){
+    if(db.active) openTime("edit");
+  });
+  $("btnCancel").addEventListener("click", function(){
+    if(!db.active) return;
+    if(!armed){
+      armed = true;
+      renderButtons(db.active);
+      armTimer = setTimeout(disarm, 4000);
+      return;
+    }
+    db.active = null; armed = false;
+    if(armTimer){ clearTimeout(armTimer); armTimer = null; }
+    reached = false;
+    save(); render();
+  });
 
   function renderStages(h){
     var box = $("stages");
