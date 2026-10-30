@@ -10,7 +10,7 @@ A point-and-click prototype built as a single self-contained HTML page (all art 
 - Click the handle on the floor to pick it up; it goes into the inventory bar.
 - Select the handle in the inventory, then click the robot on the right to throw it to him.
 - After that, click the robot on the right and Gilgamesh points at him.
-- Bottom bar: walking-line debug, sound on/off, music and ambience volume.
+- Settings (gear icon, top right): sound on/off, music and ambience volume.
 
 Browsers only allow sound after the first click on the page.
 
